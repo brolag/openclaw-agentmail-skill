@@ -1,7 +1,7 @@
 #!/bin/bash
 # Install AgentMail skill for OpenClaw
 # https://github.com/brolag/openclaw-agentmail-skill
-# v1.1.0 - Fixed non-interactive install
+# v1.2.0 - Auto-updates IDENTITY.md with email commands
 #
 # Quick install:
 #   curl -fsSL https://raw.githubusercontent.com/brolag/openclaw-agentmail-skill/main/install.sh | bash
@@ -137,23 +137,53 @@ else
     echo -e "${YELLOW}⚠️  Skill may not be detected yet. Try: openclaw gateway restart${NC}"
 fi
 
-# Update IDENTITY.md (only in interactive mode)
+# Update IDENTITY.md
+UPDATE_IDENTITY_FILE=false
+
 if [ "$INTERACTIVE" = true ]; then
     echo ""
     read -p "Add email info to IDENTITY.md? (y/n): " UPDATE_IDENTITY
-
     if [ "$UPDATE_IDENTITY" = "y" ] || [ "$UPDATE_IDENTITY" = "Y" ]; then
+        UPDATE_IDENTITY_FILE=true
+    fi
+elif [ -n "$AGENTMAIL_EMAIL" ]; then
+    # Auto-update in non-interactive mode if email was provided
+    UPDATE_IDENTITY_FILE=true
+fi
+
+if [ "$UPDATE_IDENTITY_FILE" = true ]; then
+    # Check if already has email capabilities section
+    if ! grep -q "## Email Capabilities" "$WORKSPACE/IDENTITY.md" 2>/dev/null; then
         cat >> "$WORKSPACE/IDENTITY.md" << EOF
 
 ## Email Capabilities
-- **Email**: $EMAIL_ADDRESS
-- **Skill**: Read $SKILL_DIR/SKILL.md for email commands
-- I can check my inbox, read emails, reply, and send new emails using AgentMail API.
-EOF
-        echo -e "${GREEN}✅ Updated IDENTITY.md${NC}"
-    fi
 
-    # Restart gateway
+I have email via AgentMail API. My email address is: $EMAIL_ADDRESS
+
+To check my inbox:
+\`\`\`bash
+curl -s "https://api.agentmail.to/v1/inboxes/$EMAIL_ADDRESS/messages?limit=10" \\
+  -H "Authorization: Bearer \$AGENTMAIL_API_KEY" | jq '.messages[] | {id, from, subject, date}'
+\`\`\`
+
+To send email:
+\`\`\`bash
+curl -X POST "https://api.agentmail.to/v1/inboxes/$EMAIL_ADDRESS/messages" \\
+  -H "Authorization: Bearer \$AGENTMAIL_API_KEY" \\
+  -H "Content-Type: application/json" \\
+  -d '{"to": ["recipient@email.com"], "subject": "Subject", "body": "Message"}'
+\`\`\`
+
+Read the full skill at: $SKILL_DIR/SKILL.md
+EOF
+        echo -e "${GREEN}✅ Updated IDENTITY.md with email capabilities${NC}"
+    else
+        echo -e "${YELLOW}⚠️  IDENTITY.md already has email capabilities${NC}"
+    fi
+fi
+
+# Restart gateway
+if [ "$INTERACTIVE" = true ]; then
     echo ""
     read -p "Restart OpenClaw gateway? (y/n): " RESTART
 
@@ -161,6 +191,10 @@ EOF
         echo "🔄 Restarting gateway..."
         openclaw gateway restart 2>/dev/null || echo -e "${YELLOW}⚠️  Could not restart gateway automatically${NC}"
     fi
+elif [ -n "$AGENTMAIL_EMAIL" ] && [ -n "$AGENTMAIL_API_KEY" ]; then
+    # Auto-restart in non-interactive mode if fully configured
+    echo "🔄 Restarting gateway..."
+    openclaw gateway restart 2>/dev/null || echo -e "${YELLOW}⚠️  Could not restart gateway automatically${NC}"
 fi
 
 echo ""
