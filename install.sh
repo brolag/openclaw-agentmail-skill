@@ -1,7 +1,7 @@
 #!/bin/bash
 # Install AgentMail skill for OpenClaw
 # https://github.com/brolag/openclaw-agentmail-skill
-# v1.2.0 - Auto-updates IDENTITY.md with email commands
+# v1.3.0 - Fixed API version (v0 not v1)
 #
 # Quick install:
 #   curl -fsSL https://raw.githubusercontent.com/brolag/openclaw-agentmail-skill/main/install.sh | bash
@@ -80,7 +80,7 @@ elif [ "$INTERACTIVE" = true ]; then
 
     if [ -n "$API_KEY" ]; then
         echo "🧪 Testing API key..."
-        RESPONSE=$(curl -s "https://api.agentmail.to/v1/inboxes" \
+        RESPONSE=$(curl -s "https://api.agentmail.to/v0/inboxes" \
             -H "Authorization: Bearer $API_KEY" 2>/dev/null)
 
         if echo "$RESPONSE" | grep -q "error\|unauthorized"; then
@@ -162,13 +162,13 @@ I have email via AgentMail API. My email address is: $EMAIL_ADDRESS
 
 To check my inbox:
 \`\`\`bash
-curl -s "https://api.agentmail.to/v1/inboxes/$EMAIL_ADDRESS/messages?limit=10" \\
+curl -s "https://api.agentmail.to/v0/inboxes/$EMAIL_ADDRESS/messages?limit=10" \\
   -H "Authorization: Bearer \$AGENTMAIL_API_KEY" | jq '.messages[] | {id, from, subject, date}'
 \`\`\`
 
 To send email:
 \`\`\`bash
-curl -X POST "https://api.agentmail.to/v1/inboxes/$EMAIL_ADDRESS/messages" \\
+curl -X POST "https://api.agentmail.to/v0/inboxes/$EMAIL_ADDRESS/messages" \\
   -H "Authorization: Bearer \$AGENTMAIL_API_KEY" \\
   -H "Content-Type: application/json" \\
   -d '{"to": ["recipient@email.com"], "subject": "Subject", "body": "Message"}'

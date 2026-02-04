@@ -114,14 +114,14 @@ Once installed, your agent can use these commands:
 ### Check Inbox
 
 ```bash
-curl -s "https://api.agentmail.to/v1/inboxes/YOUR_EMAIL/messages?limit=10" \
+curl -s "https://api.agentmail.to/v0/inboxes/YOUR_EMAIL/messages?limit=10" \
   -H "Authorization: Bearer $AGENTMAIL_API_KEY" | jq
 ```
 
 ### Send Email
 
 ```bash
-curl -X POST "https://api.agentmail.to/v1/inboxes/YOUR_EMAIL/messages" \
+curl -X POST "https://api.agentmail.to/v0/inboxes/YOUR_EMAIL/messages" \
   -H "Authorization: Bearer $AGENTMAIL_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{"to": ["recipient@email.com"], "subject": "Hello", "body": "Message"}'

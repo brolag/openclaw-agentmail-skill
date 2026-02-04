@@ -20,51 +20,49 @@ Configure your email address in the commands below. Replace `your-agent@agentmai
 
 ## Commands
 
-### Check Inbox (last 10 emails)
+### List All Inboxes
 
 ```bash
-curl -s "https://api.agentmail.to/v1/inboxes/your-agent@agentmail.to/messages?limit=10" \
-  -H "Authorization: Bearer $AGENTMAIL_API_KEY" | jq '.messages[] | {id, from, subject, date}'
+curl -s "https://api.agentmail.to/v0/inboxes" \
+  -H "Authorization: Bearer $AGENTMAIL_API_KEY" | jq '.inboxes[] | {inbox_id, display_name}'
+```
+
+### Check Inbox (list messages)
+
+```bash
+curl -s "https://api.agentmail.to/v0/inboxes/your-agent@agentmail.to/messages" \
+  -H "Authorization: Bearer $AGENTMAIL_API_KEY" | jq '.messages[] | {message_id, from, subject, created_at}'
 ```
 
 ### Read Specific Email
 
 ```bash
-curl -s "https://api.agentmail.to/v1/messages/{MESSAGE_ID}" \
-  -H "Authorization: Bearer $AGENTMAIL_API_KEY" | jq '{from, to, subject, body}'
-```
-
-### Reply to Email
-
-```bash
-curl -X POST "https://api.agentmail.to/v1/messages/{MESSAGE_ID}/reply" \
-  -H "Authorization: Bearer $AGENTMAIL_API_KEY" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "body": "Your reply here",
-    "contentType": "text/plain"
-  }'
+curl -s "https://api.agentmail.to/v0/inboxes/your-agent@agentmail.to/messages/{MESSAGE_ID}" \
+  -H "Authorization: Bearer $AGENTMAIL_API_KEY" | jq '{from, to, subject, text, html}'
 ```
 
 ### Send New Email
 
 ```bash
-curl -X POST "https://api.agentmail.to/v1/inboxes/your-agent@agentmail.to/messages" \
+curl -X POST "https://api.agentmail.to/v0/inboxes/your-agent@agentmail.to/messages/send" \
   -H "Authorization: Bearer $AGENTMAIL_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{
     "to": ["recipient@example.com"],
     "subject": "Email subject",
-    "body": "Message content",
-    "contentType": "text/plain"
+    "text": "Message content in plain text"
   }'
 ```
 
-### List All Inboxes
+### Reply to Email
 
 ```bash
-curl -s "https://api.agentmail.to/v1/inboxes" \
-  -H "Authorization: Bearer $AGENTMAIL_API_KEY" | jq '.inboxes[] | {address, createdAt}'
+curl -X POST "https://api.agentmail.to/v0/inboxes/your-agent@agentmail.to/messages/{MESSAGE_ID}/reply" \
+  -H "Authorization: Bearer $AGENTMAIL_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "text": "Your reply here"
+  }'
 ```
 
 ## Usage Examples

@@ -18,15 +18,15 @@ echo ""
 
 # Test 1: List inboxes
 echo "1️⃣ Listing inboxes..."
-RESPONSE=$(curl -s "https://api.agentmail.to/v1/inboxes" \
+RESPONSE=$(curl -s "https://api.agentmail.to/v0/inboxes" \
     -H "Authorization: Bearer $API_KEY")
 
-if echo "$RESPONSE" | grep -q "error"; then
+if echo "$RESPONSE" | grep -q "error\|Forbidden"; then
     echo "❌ Failed: $RESPONSE"
     exit 1
 else
     echo "✅ Success! Inboxes:"
-    echo "$RESPONSE" | jq '.inboxes[] | {address, createdAt}' 2>/dev/null || echo "$RESPONSE"
+    echo "$RESPONSE" | jq '.inboxes[] | {inbox_id, display_name}' 2>/dev/null || echo "$RESPONSE"
 fi
 
 echo ""
