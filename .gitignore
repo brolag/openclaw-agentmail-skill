@@ -1,0 +1,24 @@
+# Environment
+.env
+*.env.local
+
+# API Keys (never commit these!)
+*api_key*
+*apikey*
+*.key
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Editor
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Logs
+*.log
+
+# Test output
+test-output/
