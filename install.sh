@@ -1,6 +1,7 @@
 #!/bin/bash
 # Install AgentMail skill for OpenClaw
 # https://github.com/brolag/openclaw-agentmail-skill
+# v1.1.0 - Fixed non-interactive install
 #
 # Quick install:
 #   curl -fsSL https://raw.githubusercontent.com/brolag/openclaw-agentmail-skill/main/install.sh | bash
@@ -167,10 +168,15 @@ echo -e "${GREEN}🎉 Installation complete!${NC}"
 echo ""
 
 if [ "$INTERACTIVE" = false ]; then
-    echo "To complete setup, run:"
-    echo "  1. export AGENTMAIL_API_KEY=\"your-api-key\""
-    echo "  2. sed -i 's/your-agent@agentmail.to/YOUR_EMAIL/g' $SKILL_DIR/SKILL.md"
-    echo "  3. openclaw gateway restart"
+    echo -e "${YELLOW}📋 To complete setup, run these commands:${NC}"
+    echo ""
+    echo "  export AGENTMAIL_API_KEY=\"your-api-key\""
+    echo "  sed -i 's/your-agent@agentmail.to/YOUR_EMAIL/g' $SKILL_DIR/SKILL.md"
+    echo "  openclaw gateway restart"
+    echo ""
+    echo -e "${YELLOW}Or reinstall with env vars:${NC}"
+    echo "  AGENTMAIL_API_KEY=\"key\" AGENTMAIL_EMAIL=\"you@agentmail.to\" \\"
+    echo "    curl -fsSL $REPO_URL/install.sh | bash"
 else
     echo "Next steps:"
     echo "  1. Source your shell config: source ~/.bashrc"
