@@ -41,7 +41,13 @@ This skill follows the [OpenClaw AgentSkills format](https://docs.openclaw.ai/to
 
 ## Installation
 
-### Quick Install
+### One-Line Install
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/brolag/openclaw-agentmail-skill/main/install.sh | bash
+```
+
+### From Source
 
 ```bash
 git clone https://github.com/brolag/openclaw-agentmail-skill.git

@@ -1,6 +1,9 @@
 #!/bin/bash
 # Install AgentMail skill for OpenClaw
 # https://github.com/brolag/openclaw-agentmail-skill
+#
+# Quick install:
+#   curl -fsSL https://raw.githubusercontent.com/brolag/openclaw-agentmail-skill/main/install.sh | bash
 
 set -e
 
@@ -9,6 +12,8 @@ RED='\033[0;31m'
 GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
 NC='\033[0m' # No Color
+
+REPO_URL="https://raw.githubusercontent.com/brolag/openclaw-agentmail-skill/main"
 
 echo -e "${GREEN}🦞 OpenClaw AgentMail Skill Installer${NC}"
 echo ""
@@ -33,11 +38,17 @@ echo ""
 # Create directory
 mkdir -p "$SKILL_DIR"
 
-# Copy skill file
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-cp "$SCRIPT_DIR/SKILL.md" "$SKILL_DIR/SKILL.md"
+# Get SKILL.md - try local first, then download from GitHub
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}" 2>/dev/null)" && pwd 2>/dev/null)" || SCRIPT_DIR=""
 
-echo -e "${GREEN}✅ Skill installed${NC}"
+if [ -n "$SCRIPT_DIR" ] && [ -f "$SCRIPT_DIR/SKILL.md" ]; then
+    cp "$SCRIPT_DIR/SKILL.md" "$SKILL_DIR/SKILL.md"
+    echo -e "${GREEN}✅ Skill installed (from local)${NC}"
+else
+    echo "📥 Downloading SKILL.md from GitHub..."
+    curl -fsSL "$REPO_URL/SKILL.md" -o "$SKILL_DIR/SKILL.md"
+    echo -e "${GREEN}✅ Skill installed (from GitHub)${NC}"
+fi
 
 # Check for existing API key
 if [ -n "$AGENTMAIL_API_KEY" ]; then
