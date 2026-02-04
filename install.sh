@@ -4,6 +4,10 @@
 #
 # Quick install:
 #   curl -fsSL https://raw.githubusercontent.com/brolag/openclaw-agentmail-skill/main/install.sh | bash
+#
+# With configuration:
+#   AGENTMAIL_API_KEY="your-key" AGENTMAIL_EMAIL="agent@agentmail.to" \
+#     curl -fsSL https://raw.githubusercontent.com/brolag/openclaw-agentmail-skill/main/install.sh | bash
 
 set -e
 
@@ -17,6 +21,13 @@ REPO_URL="https://raw.githubusercontent.com/brolag/openclaw-agentmail-skill/main
 
 echo -e "${GREEN}🦞 OpenClaw AgentMail Skill Installer${NC}"
 echo ""
+
+# Detect if running interactively (not piped)
+if [ -t 0 ]; then
+    INTERACTIVE=true
+else
+    INTERACTIVE=false
+fi
 
 # Detect OpenClaw workspace
 if [ -d "$HOME/.openclaw/workspace" ]; then
@@ -50,15 +61,23 @@ else
     echo -e "${GREEN}✅ Skill installed (from GitHub)${NC}"
 fi
 
-# Check for existing API key
+# Configure API key
 if [ -n "$AGENTMAIL_API_KEY" ]; then
-    echo -e "${GREEN}✅ API key already set in environment${NC}"
-else
+    echo -e "${GREEN}✅ API key found in environment${NC}"
+
+    # Save to shell config if not already there
+    SHELL_RC="$HOME/.bashrc"
+    [ -f "$HOME/.zshrc" ] && SHELL_RC="$HOME/.zshrc"
+
+    if ! grep -q "AGENTMAIL_API_KEY" "$SHELL_RC" 2>/dev/null; then
+        echo "export AGENTMAIL_API_KEY=\"$AGENTMAIL_API_KEY\"" >> "$SHELL_RC"
+        echo -e "${GREEN}✅ API key saved to $SHELL_RC${NC}"
+    fi
+elif [ "$INTERACTIVE" = true ]; then
     echo ""
     read -p "Enter your AgentMail API key (or press Enter to skip): " API_KEY
 
     if [ -n "$API_KEY" ]; then
-        # Test the API key first
         echo "🧪 Testing API key..."
         RESPONSE=$(curl -s "https://api.agentmail.to/v1/inboxes" \
             -H "Authorization: Bearer $API_KEY" 2>/dev/null)
@@ -71,11 +90,9 @@ else
             echo -e "${GREEN}✅ API key valid${NC}"
         fi
 
-        # Add to shell config
         SHELL_RC="$HOME/.bashrc"
         [ -f "$HOME/.zshrc" ] && SHELL_RC="$HOME/.zshrc"
 
-        # Check if already exists
         if grep -q "AGENTMAIL_API_KEY" "$SHELL_RC" 2>/dev/null; then
             echo -e "${YELLOW}⚠️  API key already in $SHELL_RC - updating${NC}"
             sed -i.bak '/AGENTMAIL_API_KEY/d' "$SHELL_RC"
@@ -85,57 +102,79 @@ else
         export AGENTMAIL_API_KEY="$API_KEY"
         echo -e "${GREEN}✅ API key saved to $SHELL_RC${NC}"
     fi
+else
+    echo -e "${YELLOW}⚠️  No API key provided. Set it with:${NC}"
+    echo "   export AGENTMAIL_API_KEY=\"your-key\""
 fi
 
-# Ask for email address
-echo ""
-read -p "Enter your AgentMail email (e.g., myagent@agentmail.to): " EMAIL_ADDRESS
-EMAIL_ADDRESS="${EMAIL_ADDRESS:-agent@agentmail.to}"
+# Configure email address
+if [ -n "$AGENTMAIL_EMAIL" ]; then
+    EMAIL_ADDRESS="$AGENTMAIL_EMAIL"
+    echo -e "${GREEN}✅ Email found in environment: $EMAIL_ADDRESS${NC}"
+elif [ "$INTERACTIVE" = true ]; then
+    echo ""
+    read -p "Enter your AgentMail email (e.g., myagent@agentmail.to): " EMAIL_ADDRESS
+    EMAIL_ADDRESS="${EMAIL_ADDRESS:-agent@agentmail.to}"
+else
+    EMAIL_ADDRESS="your-agent@agentmail.to"
+    echo -e "${YELLOW}⚠️  Using placeholder email. Update with:${NC}"
+    echo "   sed -i 's/your-agent@agentmail.to/YOUR_EMAIL/g' $SKILL_DIR/SKILL.md"
+fi
 
 # Update SKILL.md with actual email
-sed -i.bak "s/your-agent@agentmail.to/$EMAIL_ADDRESS/g" "$SKILL_DIR/SKILL.md"
+sed -i.bak "s/your-agent@agentmail.to/$EMAIL_ADDRESS/g" "$SKILL_DIR/SKILL.md" 2>/dev/null || \
+    sed -i '' "s/your-agent@agentmail.to/$EMAIL_ADDRESS/g" "$SKILL_DIR/SKILL.md"
 rm -f "$SKILL_DIR/SKILL.md.bak"
 echo -e "${GREEN}✅ Email set to $EMAIL_ADDRESS${NC}"
 
 # Verify skill is detected
 echo ""
 echo "🔍 Verifying skill installation..."
-if openclaw skills list 2>/dev/null | grep -q "agentmail"; then
+if command -v openclaw &>/dev/null && openclaw skills list 2>/dev/null | grep -q "agentmail"; then
     echo -e "${GREEN}✅ Skill 'agentmail' detected by OpenClaw${NC}"
 else
     echo -e "${YELLOW}⚠️  Skill may not be detected yet. Try: openclaw gateway restart${NC}"
 fi
 
-# Update agent identity (optional)
-echo ""
-read -p "Add email info to IDENTITY.md? (y/n): " UPDATE_IDENTITY
+# Update IDENTITY.md (only in interactive mode)
+if [ "$INTERACTIVE" = true ]; then
+    echo ""
+    read -p "Add email info to IDENTITY.md? (y/n): " UPDATE_IDENTITY
 
-if [ "$UPDATE_IDENTITY" = "y" ] || [ "$UPDATE_IDENTITY" = "Y" ]; then
-    cat >> "$WORKSPACE/IDENTITY.md" << EOF
+    if [ "$UPDATE_IDENTITY" = "y" ] || [ "$UPDATE_IDENTITY" = "Y" ]; then
+        cat >> "$WORKSPACE/IDENTITY.md" << EOF
 
 ## Email Capabilities
 - **Email**: $EMAIL_ADDRESS
 - **Skill**: Read $SKILL_DIR/SKILL.md for email commands
 - I can check my inbox, read emails, reply, and send new emails using AgentMail API.
 EOF
-    echo -e "${GREEN}✅ Updated IDENTITY.md${NC}"
-fi
+        echo -e "${GREEN}✅ Updated IDENTITY.md${NC}"
+    fi
 
-# Restart gateway (optional)
-echo ""
-read -p "Restart OpenClaw gateway? (y/n): " RESTART
+    # Restart gateway
+    echo ""
+    read -p "Restart OpenClaw gateway? (y/n): " RESTART
 
-if [ "$RESTART" = "y" ] || [ "$RESTART" = "Y" ]; then
-    echo "🔄 Restarting gateway..."
-    openclaw gateway restart 2>/dev/null || echo -e "${YELLOW}⚠️  Could not restart gateway automatically${NC}"
+    if [ "$RESTART" = "y" ] || [ "$RESTART" = "Y" ]; then
+        echo "🔄 Restarting gateway..."
+        openclaw gateway restart 2>/dev/null || echo -e "${YELLOW}⚠️  Could not restart gateway automatically${NC}"
+    fi
 fi
 
 echo ""
 echo -e "${GREEN}🎉 Installation complete!${NC}"
 echo ""
-echo "Next steps:"
-echo "  1. Source your shell config: source ~/.bashrc"
-echo "  2. Test the API: ./examples/test-api.sh"
-echo "  3. Tell your agent to check email!"
+
+if [ "$INTERACTIVE" = false ]; then
+    echo "To complete setup, run:"
+    echo "  1. export AGENTMAIL_API_KEY=\"your-api-key\""
+    echo "  2. sed -i 's/your-agent@agentmail.to/YOUR_EMAIL/g' $SKILL_DIR/SKILL.md"
+    echo "  3. openclaw gateway restart"
+else
+    echo "Next steps:"
+    echo "  1. Source your shell config: source ~/.bashrc"
+    echo "  2. Tell your agent to check email!"
+fi
 echo ""
 echo "Documentation: https://github.com/brolag/openclaw-agentmail-skill"

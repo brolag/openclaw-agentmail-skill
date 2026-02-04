@@ -41,13 +41,27 @@ This skill follows the [OpenClaw AgentSkills format](https://docs.openclaw.ai/to
 
 ## Installation
 
-### One-Line Install
+### One-Line Install (with config)
+
+```bash
+AGENTMAIL_API_KEY="your-key" AGENTMAIL_EMAIL="agent@agentmail.to" \
+  curl -fsSL https://raw.githubusercontent.com/brolag/openclaw-agentmail-skill/main/install.sh | bash
+```
+
+### One-Line Install (basic)
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/brolag/openclaw-agentmail-skill/main/install.sh | bash
 ```
 
-### From Source
+Then complete setup:
+```bash
+export AGENTMAIL_API_KEY="your-key"
+sed -i 's/your-agent@agentmail.to/YOUR_EMAIL/g' ~/.openclaw/workspace/skills/agentmail/SKILL.md
+openclaw gateway restart
+```
+
+### From Source (interactive)
 
 ```bash
 git clone https://github.com/brolag/openclaw-agentmail-skill.git
