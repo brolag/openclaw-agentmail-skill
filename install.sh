@@ -1,7 +1,7 @@
 #!/bin/bash
 # Install AgentMail skill for OpenClaw
 # https://github.com/brolag/openclaw-agentmail-skill
-# v1.3.0 - Fixed API version (v0 not v1)
+# v1.4.0 - Adds API key to OpenClaw config (not just bashrc)
 #
 # Quick install:
 #   curl -fsSL https://raw.githubusercontent.com/brolag/openclaw-agentmail-skill/main/install.sh | bash
@@ -73,6 +73,20 @@ if [ -n "$AGENTMAIL_API_KEY" ]; then
     if ! grep -q "AGENTMAIL_API_KEY" "$SHELL_RC" 2>/dev/null; then
         echo "export AGENTMAIL_API_KEY=\"$AGENTMAIL_API_KEY\"" >> "$SHELL_RC"
         echo -e "${GREEN}✅ API key saved to $SHELL_RC${NC}"
+    fi
+
+    # CRITICAL: Add to OpenClaw config so the agent can access it
+    OPENCLAW_CONFIG="$HOME/.openclaw/openclaw.json"
+    if [ -f "$OPENCLAW_CONFIG" ] && command -v jq &>/dev/null; then
+        # Check if env already has the key
+        EXISTING_KEY=$(jq -r '.env.AGENTMAIL_API_KEY // empty' "$OPENCLAW_CONFIG" 2>/dev/null)
+        if [ -z "$EXISTING_KEY" ]; then
+            # Add or update env section with AGENTMAIL_API_KEY
+            jq --arg key "$AGENTMAIL_API_KEY" '.env = (.env // {}) + {"AGENTMAIL_API_KEY": $key}' "$OPENCLAW_CONFIG" > /tmp/openclaw_tmp.json && mv /tmp/openclaw_tmp.json "$OPENCLAW_CONFIG"
+            echo -e "${GREEN}✅ API key added to OpenClaw config${NC}"
+        else
+            echo -e "${GREEN}✅ API key already in OpenClaw config${NC}"
+        fi
     fi
 elif [ "$INTERACTIVE" = true ]; then
     echo ""
